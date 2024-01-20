@@ -1,0 +1,76 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
+class DFSA:
+    def __init__(self, events, states, transition_function, active_events, initial_state, accepting_states):
+        self.events = events
+        self.states = states
+        self.transition_function = transition_function
+        self.active_events = active_events
+        self.current_state = initial_state
+        self.accepting_states = accepting_states
+
+    def process_event(self, event):
+        if event not in self.active_events[self.current_state]:
+            print(f"Zdarzenie {event} nie jest aktywne w stanie {self.current_state}.")
+            return
+
+        next_state = self.transition_function.get((self.current_state, event), None)
+
+        if next_state is not None:
+            print(f"Przejście z {self.current_state} do {next_state} po zdarzeniu {event}.")
+            self.current_state = next_state
+        else:
+            print(f"Brak przejścia z {self.current_state} po zdarzeniu {event}.")
+
+    def is_accepting_state(self):
+        return self.current_state in self.accepting_states
+
+# Definicja danych związanych z projektem
+events_project = ["składanie zamówienia", "zwolnienie stolika", "zamówiona pozycja",
+                  "wykonanie dostawy", "posprzątanie stolika",
+                  "informacja dla robota o gotowości posiłku", "informacja kuchni o tym, jaki posiłek zamówiono",
+                  "sygnalizacja gotowości do działania", "sygnalizacja gotowości posiłku"]
+
+states_project = ["Klient", "Kuchnia", "Robot", "Sterownik"]
+
+transition_function_project = {("Klient", "składanie zamówienia"): "Kuchnia",
+                                ("Klient", "zwolnienie stolika"): "Sterownik",
+                                ("Kuchnia", "zamówiona pozycja"): "Sterownik",
+                                ("Robot", "wykonanie dostawy"): "Sterownik",
+                                ("Robot", "posprzątanie stolika"): "Sterownik",
+                                ("Sterownik", "informacja dla robota o gotowości posiłku"): "Robot",
+                                ("Sterownik", "informacja kuchni o tym, jaki posiłek zamówiono"): "Kuchnia",
+                                ("Robot", "sygnalizacja gotowości do działania"): "Sterownik",
+                                ("Kuchnia", "sygnalizacja gotowości posiłku"): "Sterownik"}
+
+active_events_project = {"Klient": {"składanie zamówienia", "zwolnienie stolika"},
+                         "Kuchnia": {"zamówiona pozycja", "sygnalizacja gotowości do odbioru"},
+                         "Robot": {"wykonanie dostawy", "posprzątanie stolika", "sygnalizacja gotowości do działania"},
+                         "Sterownik": {"informacja dla robota o gotowości posiłku",
+                                       "informacja kuchni o tym, jaki posiłek zamówiono",
+                                       "robot sygnalizuje gotowość do działania", "kuchnia sygnalizuje gotowość posiłku"}}
+
+initial_state_project = "Klient"
+accepting_states_project = {"Robot gotowy do działania", "Kuchnia gotowa na posiłek"}
+
+# Utwórz instancję DFSA dla projektu
+dfsa_project = DFSA(events_project, states_project, transition_function_project,
+                   active_events_project, initial_state_project, accepting_states_project)
+
+# Tworzenie grafu
+G = nx.DiGraph()
+
+for state in dfsa_project.states:
+    G.add_node(state)
+
+for transition, next_state in dfsa_project.transition_function.items():
+    G.add_edge(transition[0], next_state, label=transition[1])
+
+# Rysowanie grafu
+pos = nx.spring_layout(G, k=1)
+labels = nx.get_edge_attributes(G, 'label')
+nx.draw(G, pos, with_labels=True, font_weight='bold', node_size=1000, node_color='skyblue', font_size=8)
+nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+
+plt.show()
